@@ -1,2 +1,2 @@
-# CISC-473---ImageRestorationCompressed
+# CISC473 - ImageRestorationCompressed
 An experiment in compressing image restoration NN models using pruning and quantization
