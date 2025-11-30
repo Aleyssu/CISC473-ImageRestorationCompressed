@@ -40,12 +40,15 @@ def tensor_from_np(img):
     return img2tensor(img, bgr2rgb=False, float32=True).unsqueeze(0)
 
 # -------------------------------------------------------------------
-# Load NAFNet baseline
+# Load NAFNet model
 # -------------------------------------------------------------------
 
-def load_nafnet(config_path="models/NAFNet-width64.yml"):
+def load_nafnet(config_path="models/NAFNet-width64.yml", alternate_weights_path=None):
     opt = parse(config_path, is_train=False)
     opt['dist'] = False
+    # Defaults to `models/NAFNet-SIDD-width64.pth`
+    if alternate_weights_path:
+        opt['path']['pretrain_network_g'] = alternate_weights_path
     model = create_model(opt)
     return model
 
@@ -94,31 +97,31 @@ def count_params(model):
 
 def main():
 
-    print("\nLoading baseline NAFNet...")
-    baseline = load_nafnet()
-    baseline.net_g = baseline.net_g.cuda()
-    baseline_name = "baseline"
+    # print("\nLoading baseline NAFNet...")
+    # baseline = load_nafnet()
+    # baseline.net_g = baseline.net_g.cuda()
+    # baseline_name = "baseline"
 
-    # Load pruned/quantized models ---------------------------------------------------
-    models = {
-        "baseline": baseline.net_g,
-    }
-
-    print("Loading pruned / quantized models...")
-
+    # print("Loading pruned / quantized models...")
     # You will need to save your pruned models as .pth files in /models/
     # Example:
     # models["pruned30"] = torch.load("models/pruned30.pth")
     # models["pruned50"] = torch.load("models/pruned50.pth")
 
-    # For now, we assume only baseline is available
-    # You will add pruning/quantization versions here later
+    # Load pruned/quantized models ---------------------------------------------------
+    models = {
+        "Baseline": "models/NAFNet-SIDD-width64.pth",
+        "Pruned 30%": "models/pruned30.pth",
+        "Pruned 50%": "models/pruned50.pth",
+        # "Pruned 30% Quantized": "models/pruned30_quantized.pth",
+        # "Pruned 50% Quantized": "models/pruned50_quantized.pth"
+    }
 
     # ------------------------------------------------------------------
     # Load dataset (DIV2K patches)
     # ------------------------------------------------------------------
 
-    div2k_dir = "/content/drive/MyDrive/Machine Learning/DIV2K_patches"
+    div2k_dir = "datasets/DIV2K_patches"
     files = sorted([os.path.join(div2k_dir, f) for f in os.listdir(div2k_dir) if f.endswith(".png")])
 
     # Evaluate on first N images
@@ -134,11 +137,14 @@ def main():
 
     results = []
 
-    for name, net in models.items():
+    for name, weight_path in models.items():
+        model = load_nafnet(alternate_weights_path=weight_path)
+        net = model.net_g
+
         print(f"\nEvaluating model: {name}")
         net.eval().cuda()
 
-        p, s, latency = evaluate_model(baseline, clean_imgs)
+        p, s, latency = evaluate_model(model, clean_imgs)
 
         # model size
         tmp_path = f"{name}_tmp.pth"

@@ -12,3 +12,5 @@ tb-nightly
 tqdm
 yapf
 gdown
+torch
+torchvision
