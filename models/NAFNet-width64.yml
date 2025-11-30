@@ -35,6 +35,7 @@ network_g:
 # path
 path:
   pretrain_network_g: models/NAFNet-SIDD-width64.pth
+  models: models
   strict_load_g: true
   resume_state: ~
 
